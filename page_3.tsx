@@ -31,7 +31,7 @@ const PLAYERS = [
   {name:'Salil Arora',         ipl:'SRH',  cost:0.2,  owner:1, role:'BOWL'},
   {name:'Vipraj Nigam',        ipl:'DC',   cost:1.8,  owner:1, role:'AR'},
   {name:'Yuzvendra Chahal',    ipl:'PBKS', cost:10.5, owner:1, role:'BOWL'},
-  {name:'Mohammed Siraj',           ipl:'GT',   cost:3.0,  owner:1, role:'BOWL'},
+  {name:'Mohammed Siraj',      ipl:'GT',   cost:3.0,  owner:1, role:'BOWL'},
   {name:'Ravi Bishnoi',        ipl:'RR',   cost:6.6,  owner:1, role:'BOWL'},
   {name:'Mayank Markande',     ipl:'MI',   cost:5.2,  owner:1, role:'BOWL'},
   {name:'Mayank Yadav',        ipl:'LSG',  cost:4.4,  owner:1, role:'BOWL'},
@@ -52,19 +52,19 @@ const PLAYERS = [
   {name:'Shahbaz Ahmed',       ipl:'LSG',  cost:0.4,  owner:2, role:'AR'},
   {name:'Marcus Stoinis',      ipl:'PBKS', cost:2.2,  owner:2, role:'AR'},
   {name:'Kartik Sharma',       ipl:'CSK',  cost:0.6,  owner:2, role:'BAT'},
-  {name:'Kagiso Rabada',           ipl:'GT',   cost:1.2,  owner:2, role:'BOWL'},
+  {name:'Kagiso Rabada',       ipl:'GT',   cost:1.2,  owner:2, role:'BOWL'},
   {name:'Rinku Singh',         ipl:'KKR',  cost:1.0,  owner:2, role:'BAT'},
   {name:'Venkatesh Iyer',      ipl:'RCB',  cost:1.0,  owner:2, role:'AR'},
   // ── MILANJEET (id 3) ──
   {name:'Abhishek Sharma',     ipl:'SRH',  cost:18.5, owner:3, role:'BAT'},
   {name:'Ruturaj Gaikwad',     ipl:'CSK',  cost:4.6,  owner:3, role:'BAT'},
-  {name:'Ryan Rickelton',      ipl:'MI',   cost:1.0,  owner:3, role:'WK'}, 
+  {name:'Ryan Rickelton',      ipl:'MI',   cost:1.0,  owner:3, role:'WK'},
   {name:'Pathum Nissanka',     ipl:'DC',   cost:1.0,  owner:3, role:'BAT'},
   {name:'Naman Dhir',          ipl:'MI',   cost:1.6,  owner:3, role:'BAT'},
   {name:'Tristan Stubbs',      ipl:'DC',   cost:1.0,  owner:3, role:'BAT'},
   {name:'Shimron Hetmyer',     ipl:'RR',   cost:1.0,  owner:3, role:'BAT'},
   {name:'Rajat Patidar',       ipl:'RCB',  cost:2.8,  owner:3, role:'BAT'},
-  {name:'Nitish Kumar Reddy',  ipl:'SRH',  cost:4.4,  owner:3, role:'AR'}, 
+  {name:'Nitish Kumar Reddy',  ipl:'SRH',  cost:4.4,  owner:3, role:'AR'},
   {name:'Marco Jansen',        ipl:'PBKS', cost:8.0,  owner:3, role:'AR'},
   {name:'Axar Patel',          ipl:'DC',   cost:1.0,  owner:3, role:'AR'},
   {name:'Pat Cummins',         ipl:'SRH',  cost:5.0,  owner:3, role:'AR'},
@@ -83,21 +83,21 @@ const PLAYERS = [
   {name:'Tushar Deshpande',    ipl:'RR',   cost:7.2,  owner:4, role:'BOWL'},
   {name:'Jasprit Bumrah',      ipl:'MI',   cost:16.5, owner:4, role:'BOWL'},
   {name:'Shashank Singh',      ipl:'PBKS', cost:5.4,  owner:4, role:'BAT'},
-  {name:'Quinton de Kock',     ipl:'MI',   cost:8.2,  owner:4, role:'WK'}, 
+  {name:'Quinton de Kock',     ipl:'MI',   cost:8.2,  owner:4, role:'WK'},
   {name:'MS Dhoni',            ipl:'CSK',  cost:5.2,  owner:4, role:'WK'},
   {name:'Vignesh Puthur',      ipl:'RR',   cost:0.2,  owner:4, role:'BOWL'},
   {name:'Mitchell Starc',      ipl:'DC',   cost:5.2,  owner:4, role:'BOWL'},
-  {name:'Varun Chakaravarthy',  ipl:'KKR',  cost:19.5, owner:4, role:'BOWL'},
+  {name:'Varun Chakaravarthy', ipl:'KKR',  cost:19.5, owner:4, role:'BOWL'},
   {name:'Prashant Veer',       ipl:'CSK',  cost:0.4,  owner:4, role:'BOWL'},
   // ── PARE (id 5) ──
   {name:'Aniket Verma',        ipl:'SRH',  cost:4.0,  owner:5, role:'BAT'},
-  {name:'Auqib Nabi Dar',           ipl:'DC',   cost:4.0,  owner:5, role:'BOWL'},
+  {name:'Auqib Nabi Dar',      ipl:'DC',   cost:4.0,  owner:5, role:'BOWL'},
   {name:'Sherfane Rutherford', ipl:'MI',   cost:5.0,  owner:5, role:'BAT'},
   {name:'Prince Yadav',        ipl:'LSG',  cost:0.2,  owner:5, role:'BAT'},
   {name:'Zeeshan Ansari',      ipl:'SRH',  cost:4.2,  owner:5, role:'BOWL'},
-  {name:'Yudhvir Singh Charak', ipl:'RR',   cost:0.4,  owner:5, role:'BOWL'},
+  {name:'Yudhvir Singh Charak',ipl:'RR',   cost:0.4,  owner:5, role:'BOWL'},
   {name:'KL Rahul',            ipl:'DC',   cost:19.0, owner:5, role:'WK'},
-  {name:'Nicholas Pooran',      ipl:'LSG',  cost:10.5, owner:5, role:'WK'},
+  {name:'Nicholas Pooran',     ipl:'LSG',  cost:10.5, owner:5, role:'WK'},
   {name:'Romario Shepherd',    ipl:'RCB',  cost:6.4,  owner:5, role:'AR'},
   {name:'Josh Hazlewood',      ipl:'RCB',  cost:4.6,  owner:5, role:'BOWL'},
   {name:'Riyan Parag',         ipl:'RR',   cost:3.6,  owner:5, role:'AR'},
@@ -117,23 +117,23 @@ const PLAYERS = [
   {name:'Krunal Pandya',       ipl:'RCB',  cost:9.2,  owner:6, role:'AR'},
   {name:'Ravindra Jadeja',     ipl:'RR',   cost:4.0,  owner:6, role:'AR'},
   {name:'Rahul Tewatia',       ipl:'GT',   cost:3.2,  owner:6, role:'AR'},
-  {name:'Ravisrinivasan Sai Kishore',         ipl:'GT',   cost:6.4,  owner:6, role:'BOWL'},
+  {name:'Ravisrinivasan Sai Kishore', ipl:'GT', cost:6.4, owner:6, role:'BOWL'},
   {name:'Harshal Patel',       ipl:'SRH',  cost:4.4,  owner:6, role:'BOWL'},
   {name:'Trent Boult',         ipl:'MI',   cost:13.0, owner:6, role:'BOWL'},
   {name:'Digvesh Rathi',       ipl:'LSG',  cost:0.4,  owner:6, role:'BOWL'},
   {name:'Mangesh Yadav',       ipl:'RCB',  cost:0.2,  owner:6, role:'BOWL'},
   // ── KHERA (id 7) ──
   {name:'Suryakumar Yadav',    ipl:'MI',   cost:19.5, owner:7, role:'BAT'},
-  {name:'Abishek Porel',      ipl:'DC',   cost:7.0,  owner:7, role:'WK'},
+  {name:'Abishek Porel',       ipl:'DC',   cost:7.0,  owner:7, role:'WK'},
   {name:'Heinrich Klaasen',    ipl:'SRH',  cost:12.0, owner:7, role:'WK'},
   {name:'Shivam Dube',         ipl:'CSK',  cost:11.0, owner:7, role:'AR'},
   {name:'Mukesh Kumar',        ipl:'DC',   cost:2.2,  owner:7, role:'BOWL'},
   {name:'Nehal Wadhera',       ipl:'PBKS', cost:6.8,  owner:7, role:'BAT'},
-  {name:'Mitchell Marsh',         ipl:'LSG',  cost:13.5, owner:7, role:'AR'},
+  {name:'Mitchell Marsh',      ipl:'LSG',  cost:13.5, owner:7, role:'AR'},
   {name:'Bhuvneshwar Kumar',   ipl:'RCB',  cost:5.8,  owner:7, role:'BOWL'},
   {name:'Jitesh Sharma',       ipl:'RCB',  cost:6.2,  owner:7, role:'WK'},
-  {name:'Philip Salt',           ipl:'RCB',  cost:8.4,  owner:7, role:'WK'},
-  {name:'Devdutt Padikkal',    ipl:'RCB',  cost:4.2,  owner:7, role:'BAT'}, 
+  {name:'Philip Salt',         ipl:'RCB',  cost:8.4,  owner:7, role:'WK'},
+  {name:'Devdutt Padikkal',    ipl:'RCB',  cost:4.2,  owner:7, role:'BAT'},
   {name:'Abdul Samad',         ipl:'LSG',  cost:0.2,  owner:7, role:'BAT'},
   {name:'Krains Fuletra',      ipl:'SRH',  cost:0.2,  owner:7, role:'BOWL'},
   {name:'Tim Seifert',         ipl:'KKR',  cost:1.0,  owner:7, role:'WK'},
@@ -148,21 +148,21 @@ const PLAYERS = [
   {name:'Ajinkya Rahane',      ipl:'KKR',  cost:8.6,  owner:8, role:'BAT'},
   {name:'Ramandeep Singh',     ipl:'KKR',  cost:1.6,  owner:8, role:'AR'},
   {name:'Finn Allen',          ipl:'KKR',  cost:10.0, owner:8, role:'WK'},
-  {name:'Mohammed Shami',            ipl:'LSG',  cost:5.0,  owner:8, role:'BOWL'},
+  {name:'Mohammed Shami',      ipl:'LSG',  cost:5.0,  owner:8, role:'BOWL'},
   {name:'Washington Sundar',   ipl:'GT',   cost:2.4,  owner:8, role:'AR'},
   {name:'Suyash Sharma',       ipl:'RCB',  cost:0.4,  owner:8, role:'BOWL'},
   {name:'Sunil Narine',        ipl:'KKR',  cost:2.4,  owner:8, role:'AR'},
   {name:'Dhruv Jurel',         ipl:'RR',   cost:1.0,  owner:8, role:'WK'},
-  {name:'Noor Ahmad',          ipl:'CSK',  cost:1.0,  owner:8, role:'BOWL'},  // FIX: Ahmed → Ahmad
+  {name:'Noor Ahmad',          ipl:'CSK',  cost:1.0,  owner:8, role:'BOWL'},
   {name:'Harsh Dubey',         ipl:'SRH',  cost:0.2,  owner:8, role:'BOWL'},
 ];
 
 const EXCLUDED_API_NAMES = new Set([
-  'jacob duffy', 'jacob g duffy',       // unsold, not in our pool
-  'rahul chahar',                         // CSK bowler — would falsely match Deepak Chahar
-  'khaleel ahmed',                        // CSK bowler — would falsely match Shahbaz Ahmed
-  'gurnoor brar',                         // GT bowler — would falsely match Harpreet Brar
-  'harshit rana',                         // KKR bowler — would falsely match Nitish Rana
+  'jacob duffy', 'jacob g duffy',
+  'rahul chahar',
+  'khaleel ahmed',
+  'gurnoor brar',
+  'harshit rana',
 ]);
 
 type Player = typeof PLAYERS[0];
@@ -170,8 +170,6 @@ type Owner = typeof OWNERS[0];
 type ScoreEntry = { runs: number; wickets: number; catches: number; stumpings: number; matchPts: number[] };
 type Scores = Record<string, ScoreEntry>;
 type ActiveView = 'leaderboard' | 'teams' | 'auction' | 'progress' | 'rawstats';
-
-// Match metadata stored alongside scores so raw stats tab can show dates/opponents
 type MatchMeta = { id: string; name: string; date: string };
 
 function isMarquee(name: string) { return MARQUEE_SET.has(name); }
@@ -267,11 +265,7 @@ export default function Home() {
   const [modalContent, setModalContent] = useState<{title:string;body:string}|null>(null);
   const [toast, setToast] = useState<{msg:string;show:boolean}>({msg:'',show:false});
   const toastTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
-
-  // Raw stats view state
   const [rawTeam, setRawTeam] = useState<number>(1);
-
-  // Music player
   const [currentTrack, setCurrentTrack] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolumeState] = useState(70);
@@ -385,7 +379,6 @@ export default function Home() {
           }
 
           const dt = (b.dismissal||'').toLowerCase();
-          // FIX: handle both 'caught' and 'catch' (CricAPI uses 'caught')
           if (dt==='caught'||dt==='catch') {
             const f = fuzzyMatch(fielder(b));
             if (f&&updatedScores[f]){updatedScores[f].catches+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}
@@ -412,13 +405,16 @@ export default function Home() {
       const r = await fetch(`https://api.cricapi.com/v1/series_info?apikey=${CRICAPI_KEY}&id=${IPL_2026_SERIES_ID}`);
       const d = await r.json();
       if (d.status!=='success') throw new Error(d.reason||'API error');
+
+      // ── FIX: sort by dateTimeGMT so M1 = first real IPL match, not API order ──
       const completed = (d.data?.matchList||[])
-  .filter((m:any) => m.matchStarted && m.matchEnded)
-  .sort((a:any, b:any) => {
-    const dateA = new Date(a.dateTimeGMT || a.date || 0).getTime();
-    const dateB = new Date(b.dateTimeGMT || b.date || 0).getTime();
-    return dateA - dateB;
-  });
+        .filter((m:any) => m.matchStarted && m.matchEnded)
+        .sort((a:any, b:any) => {
+          const dateA = new Date(a.dateTimeGMT || a.date || 0).getTime();
+          const dateB = new Date(b.dateTimeGMT || b.date || 0).getTime();
+          return dateA - dateB;
+        });
+
       setMatchesPlayed(completed.length);
 
       const metas: MatchMeta[] = completed.map((m:any) => ({
@@ -544,7 +540,6 @@ export default function Home() {
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:400px;height:auto;display:block">${gridLines}${xLabels}${lines}<line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+cH}" stroke="#2A3550" stroke-width="1"/><line x1="${PAD.left}" y1="${PAD.top+cH}" x2="${PAD.left+cW}" y2="${PAD.top+cH}" stroke="#2A3550" stroke-width="1"/></svg>`;
   }, [scores]);
 
-  // Ticker auto-generated from actual marquee data — names always in sync with CricAPI
   const marqueeTickerItems = OWNERS.flatMap(o =>
     o.marquee.map(name => {
       const p = PLAYERS.find(x => x.name === name);
@@ -554,28 +549,15 @@ export default function Home() {
   const tickerItems = ['IPL 2026 · Season Underway', '⚡ Marquee system LIVE — 1.5× points for star picks', ...marqueeTickerItems];
   const tickerDoubled = [...tickerItems, ...tickerItems];
 
-  // ── RAW STATS VIEW ──────────────────────────────────────────────────────────
   function renderRawStats() {
     const owner = ownerById(rawTeam)!;
     const squad = PLAYERS.filter(p => p.owner === rawTeam).sort((a,b) => playerPts(b.name,scores)-playerPts(a.name,scores));
     const numMatches = matchesPlayed || Math.max(...squad.map(p => (scores[p.name]?.matchPts||[]).length), 0);
-
-    // Column headers: player info + one column per match + totals
     const matchCols = Array.from({length: numMatches}, (_,i) => i);
-
     const td = (content: string|number, style='') =>
       `<td style="padding:5px 8px;border:1px solid #1e2a3a;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;${style}">${content}</td>`;
     const th = (content: string, style='') =>
       `<th style="padding:5px 8px;border:1px solid #1e2a3a;font-size:10px;font-weight:700;letter-spacing:1px;background:#0a0f18;white-space:nowrap;text-align:center;${style}">${content}</th>`;
-
-    // Build match header labels from metas if available
-    const matchLabel = (i: number) => {
-      const m = matchMetas[i];
-      if (!m) return `M${i+1}`;
-      // Extract short team names from match name like "RCB vs SRH, Match 1"
-      const short = m.name.replace(/,.*$/, '').trim();
-      return `M${i+1}`;
-    };
     const matchTitle = (i: number) => {
       const m = matchMetas[i];
       if (!m) return `Match ${i+1}`;
@@ -592,14 +574,12 @@ export default function Home() {
       const base = rawPts(p.name,scores);
       const final = playerPts(p.name,scores);
       teamRunsTotal += s.runs; teamWkTotal += s.wickets; teamCatchTotal += s.catches; teamStmpTotal += s.stumpings;
-
       const matchCells = matchCols.map(i => {
         const mp = s.matchPts[i] ?? 0;
-        const color = mp > 0 ? '#FFD700' : mp === 0 ? '#3a4a60' : '#E8EDF5';
+        const color = mp > 0 ? '#FFD700' : '#3a4a60';
         teamMatchPts[i] = (teamMatchPts[i]||0) + (mq ? Math.round(mp*MARQUEE_MULTIPLIER) : mp);
-        return td(mp > 0 ? `+${mp}` : mp===0 ? '—' : mp, `color:${color};text-align:center;`);
+        return td(mp > 0 ? `+${mp}` : '—', `color:${color};text-align:center;`);
       }).join('');
-
       const rowBg = mq ? 'background:rgba(57,255,20,0.04);' : '';
       const nameStyle = `color:${owner.color};font-weight:700;font-size:11px;`;
       tableRows += `<tr style="${rowBg}">
@@ -615,15 +595,12 @@ export default function Home() {
       </tr>`;
     }
 
-    // Team totals row
     const teamBase = PLAYERS.filter(p=>p.owner===rawTeam).reduce((s,p)=>s+rawPts(p.name,scores),0);
     const teamFinal = teamPts(rawTeam,scores);
     const matchTotalCells = teamMatchPts.map(v => td(v>0?`+${v}`:'—', `color:${v>0?'#FFD700':'#3a4a60'};text-align:center;font-weight:700;`)).join('');
-
     const totalsRow = `<tr style="background:#0a0f18;font-weight:700;">
       ${td('TEAM TOTAL','color:#FFD700;font-weight:700;font-size:12px;')}
-      ${td('','text-align:center;')}
-      ${td('','text-align:center;')}
+      ${td('','text-align:center;')}${td('','text-align:center;')}
       ${td(teamRunsTotal,'color:#00D4FF;text-align:right;font-weight:700;')}
       ${td(teamWkTotal,'color:#E8003D;text-align:right;font-weight:700;')}
       ${td(teamCatchTotal+teamStmpTotal,'color:#00E676;text-align:right;font-weight:700;')}
@@ -631,37 +608,26 @@ export default function Home() {
       ${td(teamFinal,`color:#FFD700;text-align:right;font-weight:700;font-size:13px;`)}
       ${matchTotalCells}
     </tr>`;
-
     const matchHeaders = matchCols.map(i =>
-      th(`<span title="${matchTitle(i)}" style="cursor:help">${matchLabel(i)}</span>`, 'min-width:44px;')
+      th(`<span title="${matchTitle(i)}" style="cursor:help">M${i+1}</span>`, 'min-width:44px;')
     ).join('');
-
     const table = `
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <table style="border-collapse:collapse;width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;">
-        <thead>
-          <tr>
-            ${th('Player','text-align:left;min-width:140px;')}
-            ${th('Role')}
-            ${th('IPL')}
-            ${th('Runs','color:#00D4FF;')}
-            ${th('Wkts','color:#E8003D;')}
-            ${th('C+St','color:#00E676;')}
-            ${th('Base Pts','color:#aaa;')}
-            ${th('Final Pts','color:#FFD700;')}
-            ${matchHeaders}
-          </tr>
-        </thead>
+        <thead><tr>
+          ${th('Player','text-align:left;min-width:140px;')}
+          ${th('Role')}${th('IPL')}
+          ${th('Runs','color:#00D4FF;')}${th('Wkts','color:#E8003D;')}${th('C+St','color:#00E676;')}
+          ${th('Base Pts','color:#aaa;')}${th('Final Pts','color:#FFD700;')}
+          ${matchHeaders}
+        </tr></thead>
         <tbody>${tableRows}${totalsRow}</tbody>
-      </table>
-      </div>`;
-
-    // Scoring key reminder
+      </table></div>`;
     const key = `<div style="margin-top:12px;font-size:10px;color:#7A8BAA;font-family:'JetBrains Mono',monospace;display:flex;gap:16px;flex-wrap:wrap;">
-      <span>Run = 1pt</span><span>Wicket = 25pts</span><span>Catch/Stumping = 5pts</span><span style="color:#39FF14;">⚡ Marquee = ×1.5 final pts</span>
+      <span>Run = 1pt</span><span>Wicket = 25pts</span><span>Catch/Stumping = 5pts</span>
+      <span style="color:#39FF14;">⚡ Marquee = ×1.5 final pts</span>
       <span style="color:#aaa;">Match cols = raw base pts (pre-multiplier)</span>
     </div>`;
-
     return table + key;
   }
 
@@ -1018,8 +984,6 @@ export default function Home() {
                 {matchesPlayed} MATCHES · ALL SCORES BROKEN DOWN
               </div>
             </div>
-
-            {/* Team selector */}
             <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:'1.25rem'}}>
               {OWNERS.map(o=>(
                 <button key={o.id} className={`raw-team-btn${rawTeam===o.id?' active':''}`} onClick={()=>setRawTeam(o.id)}
@@ -1028,14 +992,12 @@ export default function Home() {
                 </button>
               ))}
             </div>
-
             {matchesPlayed===0?(
               <div style={{background:'#161D2A',border:'1px solid #2A3550',borderRadius:10,padding:'3rem',textAlign:'center',color:'#7A8BAA',fontSize:13}}>
                 No data synced yet. Enter Admin mode and hit Refresh to load match data.
               </div>
             ):(
               <div style={{background:'#161D2A',border:'1px solid #2A3550',borderRadius:10,padding:'1rem',overflowX:'auto'}}>
-                {/* Match date legend */}
                 {matchMetas.length>0&&(
                   <div style={{marginBottom:'12px',display:'flex',flexWrap:'wrap',gap:'6px 16px'}}>
                     {matchMetas.map((m,i)=>(
@@ -1048,8 +1010,6 @@ export default function Home() {
                 <div dangerouslySetInnerHTML={{__html:renderRawStats()}}></div>
               </div>
             )}
-
-            {/* Cross-team summary */}
             {matchesPlayed>0&&(
               <div style={{marginTop:'1.5rem'}}>
                 <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,letterSpacing:2,marginBottom:'0.75rem',color:'#7A8BAA'}}>ALL TEAMS SUMMARY</div>
