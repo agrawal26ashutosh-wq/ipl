@@ -412,7 +412,13 @@ export default function Home() {
       const r = await fetch(`https://api.cricapi.com/v1/series_info?apikey=${CRICAPI_KEY}&id=${IPL_2026_SERIES_ID}`);
       const d = await r.json();
       if (d.status!=='success') throw new Error(d.reason||'API error');
-      const completed = (d.data?.matchList||[]).filter((m:any)=>m.matchStarted&&m.matchEnded);
+      const completed = (d.data?.matchList||[])
+  .filter((m:any) => m.matchStarted && m.matchEnded)
+  .sort((a:any, b:any) => {
+    const dateA = new Date(a.dateTimeGMT || a.date || 0).getTime();
+    const dateB = new Date(b.dateTimeGMT || b.date || 0).getTime();
+    return dateA - dateB;
+  });
       setMatchesPlayed(completed.length);
 
       const metas: MatchMeta[] = completed.map((m:any) => ({
