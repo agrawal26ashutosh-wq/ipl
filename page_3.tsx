@@ -412,13 +412,26 @@ export default function Home() {
       const r = await fetch(`https://api.cricapi.com/v1/series_info?apikey=${CRICAPI_KEY}&id=${IPL_2026_SERIES_ID}`);
       const d = await r.json();
       if (d.status!=='success') throw new Error(d.reason||'API error');
+      const extractMatchNum = (m: any): number => {
+        // IPL match names are like "RCB vs SRH, Match 7, Indian Premier League 2026"
+        const hit = (m.name || m.matchType || '').match(/Match\s+(\d+)/i);
+        if (hit) return parseInt(hit[1], 10);
+        // Fallback: try matchNumber field some APIs expose
+        if (typeof m.matchNumber === 'number') return m.matchNumber;
+        if (typeof m.matchNumber === 'string' && /^\d+$/.test(m.matchNumber)) return parseInt(m.matchNumber, 10);
+        return Infinity; // unknown — put at end
+      };
       const completed = (d.data?.matchList||[])
-  .filter((m:any) => m.matchStarted && m.matchEnded)
-  .sort((a:any, b:any) => {
-    const dateA = new Date(a.dateTimeGMT || a.date || 0).getTime();
-    const dateB = new Date(b.dateTimeGMT || b.date || 0).getTime();
-    return dateA - dateB;
-  });
+        .filter((m:any) => m.matchStarted && m.matchEnded)
+        .sort((a:any, b:any) => {
+          const numA = extractMatchNum(a);
+          const numB = extractMatchNum(b);
+          if (numA !== numB) return numA - numB; // sort by match number first
+          // tie-break by date
+          const dateA = new Date(a.dateTimeGMT || a.date || 0).getTime();
+          const dateB = new Date(b.dateTimeGMT || b.date || 0).getTime();
+          return dateA - dateB;
+        });
       setMatchesPlayed(completed.length);
 
       const metas: MatchMeta[] = completed.map((m:any) => ({
