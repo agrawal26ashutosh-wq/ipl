@@ -72,7 +72,7 @@ const PLAYERS = [
   {name:'Kuldeep Yadav',        ipl:'DC',   cost:11.0, owner:3, role:'BOWL'},
   {name:'Prasidh Krishna',      ipl:'GT',   cost:4.0,  owner:3, role:'BOWL'},
   {name:'Shivang Kumar',        ipl:'SRH',  cost:0.2,  owner:3, role:'BOWL'},
-  // ── AAYUSH (id 4) ──
+  // ── AAYUSH (id 4) — MS Dhoni → Glenn Phillips, Mitchell Starc → Cooper Connolly ──
   {name:'Ishant Sharma',        ipl:'GT',   cost:1.0,  owner:4, role:'BOWL'},
   {name:'Harpreet Brar',        ipl:'PBKS', cost:5.0,  owner:4, role:'AR'},
   {name:'Corbin Bosch',         ipl:'MI',   cost:1.0,  owner:4, role:'AR'},
@@ -84,9 +84,9 @@ const PLAYERS = [
   {name:'Jasprit Bumrah',       ipl:'MI',   cost:16.5, owner:4, role:'BOWL'},
   {name:'Shashank Singh',       ipl:'PBKS', cost:5.4,  owner:4, role:'BAT'},
   {name:'Quinton de Kock',      ipl:'MI',   cost:8.2,  owner:4, role:'WK'},
-  {name:'MS Dhoni',             ipl:'CSK',  cost:5.2,  owner:4, role:'WK'},
+  {name:'Glenn Phillips',       ipl:'GT',   cost:5.2,  owner:4, role:'WK'},   // replaces MS Dhoni
   {name:'Vignesh Puthur',       ipl:'RR',   cost:0.2,  owner:4, role:'BOWL'},
-  {name:'Mitchell Starc',       ipl:'DC',   cost:5.2,  owner:4, role:'BOWL'},
+  {name:'Cooper Connolly',      ipl:'PBKS', cost:5.2,  owner:4, role:'AR'},   // replaces Mitchell Starc
   {name:'Varun Chakaravarthy',  ipl:'KKR',  cost:19.5, owner:4, role:'BOWL'},
   {name:'Prashant Veer',        ipl:'CSK',  cost:0.4,  owner:4, role:'BOWL'},
   // ── PARE (id 5) ──
@@ -157,12 +157,15 @@ const PLAYERS = [
   {name:'Harsh Dubey',          ipl:'SRH',  cost:0.2,  owner:8, role:'BOWL'},
 ];
 
+const PLAYER_NAMES_SET = new Set(PLAYERS.map(p => p.name.toLowerCase()));
+
 const EXCLUDED_API_NAMES = new Set([
   'jacob duffy','jacob g duffy','rahul chahar','khaleel ahmed','gurnoor brar','harshit rana',
 ]);
 
 type ScoreEntry = { runs:number; wickets:number; catches:number; stumpings:number; matchPts:number[] };
 type Scores = Record<string,ScoreEntry>;
+type UnsoldEntry = { name:string; runs:number; wickets:number; catches:number; stumpings:number };
 type ActiveView = 'leaderboard'|'teams'|'auction'|'progress'|'rawstats';
 type MatchMeta = { id:string; name:string; date:string };
 type OwnerType = typeof OWNERS[0];
@@ -176,15 +179,15 @@ function playerPts(name:string,scores:Scores){
   const base=rawPts(name,scores);
   return isMarquee(name)?Math.round(base*MARQUEE_MULTIPLIER):base;
 }
+function unsoldPts(e:UnsoldEntry){
+  return e.runs*POINTS.run+e.wickets*POINTS.wicket+(e.catches+e.stumpings)*POINTS.catch;
+}
 function teamPts(ownerId:number,scores:Scores){
   return PLAYERS.filter(p=>p.owner===ownerId).reduce((sum,p)=>sum+playerPts(p.name,scores),0);
 }
 function sortedTeams(scores:Scores){ return [...OWNERS].sort((a,b)=>teamPts(b.id,scores)-teamPts(a.id,scores)); }
 function ownerById(id:number):OwnerType|undefined{ return OWNERS.find(o=>o.id===id); }
 
-// ── MATCH ORDER FIX ──────────────────────────────────────────────────────────
-// CricAPI names matches like "SRH vs RCB, 1st Match, T20"
-// Extracting the ordinal is the only reliable sort key — dateTimeGMT can be missing/wrong.
 function extractMatchNumber(name:string):number {
   const m=name.match(/(\d+)(?:st|nd|rd|th)\s+match/i);
   if(m) return parseInt(m[1],10);
@@ -226,9 +229,40 @@ function fuzzyMatch(apiName:string|null|undefined):string|null{
   return null;
 }
 
+// ── CACHE HELPERS ─────────────────────────────────────────────────────────────
 const SC_PREFIX='ipl26_sc_';
-function getCached(id:string):unknown{ try{ const v=localStorage.getItem(SC_PREFIX+id); return v?JSON.parse(v):null; }catch(e){ return null; } }
-function setCache(id:string,data:unknown){ try{ localStorage.setItem(SC_PREFIX+id,JSON.stringify(data)); }catch(e){} }
+const META_KEY='ipl26_match_metas';
+const SCORES_KEY='ipl26_scores';
+const UNSOLD_KEY='ipl26_unsold';
+
+function getCachedRaw(id:string):unknown{
+  try{ const v=localStorage.getItem(SC_PREFIX+id); return v?JSON.parse(v):null; }catch(e){ return null; }
+}
+function setCachedRaw(id:string,data:unknown){
+  try{ localStorage.setItem(SC_PREFIX+id,JSON.stringify(data)); }catch(e){}
+}
+function getCachedScores():Scores|null{
+  try{ const v=localStorage.getItem(SCORES_KEY); return v?JSON.parse(v):null; }catch(e){ return null; }
+}
+function setCachedScores(s:Scores){
+  try{ localStorage.setItem(SCORES_KEY,JSON.stringify(s)); }catch(e){}
+}
+function getCachedUnsold():UnsoldEntry[]|null{
+  try{ const v=localStorage.getItem(UNSOLD_KEY); return v?JSON.parse(v):null; }catch(e){ return null; }
+}
+function setCachedUnsold(u:UnsoldEntry[]){
+  try{ localStorage.setItem(UNSOLD_KEY,JSON.stringify(u)); }catch(e){}
+}
+function getCachedMetas():MatchMeta[]|null{
+  try{ const v=localStorage.getItem(META_KEY); return v?JSON.parse(v):null; }catch(e){ return null; }
+}
+function setCachedMetas(m:MatchMeta[]){
+  try{ localStorage.setItem(META_KEY,JSON.stringify(m)); }catch(e){}
+}
+function clearAllCache(){
+  Object.keys(localStorage).filter(k=>k.startsWith(SC_PREFIX)||k===META_KEY||k===SCORES_KEY||k===UNSOLD_KEY)
+    .forEach(k=>localStorage.removeItem(k));
+}
 
 const TRACKS=[
   {id:'o6HZYvPPNGo',title:'Korbo Lorbo Jeetbo Re',  artist:'KKR · Vishal-Shekhar ft. SRK'},
@@ -244,18 +278,23 @@ declare global{
 }
 interface YTPlayer{playVideo():void;pauseVideo():void;loadVideoById(id:string):void;setVolume(v:number):void;destroy():void;}
 
-// ── RENAMED: export default function App (was Home) for Vite compatibility ──
 export default function App(){
   const [scores,setScores]=useState<Scores>(()=>{
+    const cached=getCachedScores();
+    if(cached) return cached;
     const s:Scores={};PLAYERS.forEach(p=>{s[p.name]={runs:0,wickets:0,catches:0,stumpings:0,matchPts:[]};});return s;
   });
-  const [matchMetas,setMatchMetas]=useState<MatchMeta[]>([]);
+  const [unsoldPlayers,setUnsoldPlayers]=useState<UnsoldEntry[]>(()=>getCachedUnsold()||[]);
+  const [matchMetas,setMatchMetas]=useState<MatchMeta[]>(()=>getCachedMetas()||[]);
   const [activeView,setActiveView]=useState<ActiveView>('leaderboard');
   const [activeFilter,setActiveFilter]=useState('ALL');
   const [searchQuery,setSearchQuery]=useState('');
-  const [matchesPlayed,setMatchesPlayed]=useState(0);
+  const [matchesPlayed,setMatchesPlayed]=useState(()=>getCachedMetas()?.length||0);
   const [isAdmin,setIsAdmin]=useState(sessionStorage.getItem('auctionAdmin')==='1');
-  const [apiStatus,setApiStatus]=useState<{state:'idle'|'ok'|'err'|'loading',msg:string}>({state:'idle',msg:'Click Refresh to sync latest match data'});
+  const [apiStatus,setApiStatus]=useState<{state:'idle'|'ok'|'err'|'loading',msg:string}>({
+    state: getCachedScores()?'ok':'idle',
+    msg: getCachedScores()?`✓ Cached · ${getCachedMetas()?.length||0} matches · tap Refresh to update`:'Click Refresh to sync latest match data'
+  });
   const [showPinModal,setShowPinModal]=useState(false);
   const [pinInput,setPinInput]=useState('');
   const [pinError,setPinError]=useState('');
@@ -273,6 +312,7 @@ export default function App(){
   const pendingPlayRef=useRef(false);
   const skipConsecutiveRef=useRef(0);
   const skipCooldownRef=useRef(false);
+  const autoSyncDoneRef=useRef(false);
 
   function showToast(msg:string){
     setToast({msg,show:true});
@@ -280,6 +320,201 @@ export default function App(){
     toastTimerRef.current=setTimeout(()=>setToast(t=>({...t,show:false})),3500);
   }
 
+  // ── AUTO-SYNC ON PAGE LOAD: fetch only missing matches ────────────────────
+  useEffect(()=>{
+    if(autoSyncDoneRef.current) return;
+    autoSyncDoneRef.current=true;
+    autoSync();
+  },[]);
+
+  async function autoSync(){
+    try{
+      const r=await fetch(`https://api.cricapi.com/v1/series_info?apikey=${CRICAPI_KEY}&id=${IPL_2026_SERIES_ID}`);
+      const d=await r.json();
+      if(d.status!=='success') return;
+      const completed=(d.data?.matchList||[])
+        .filter((m:any)=>m.matchStarted&&m.matchEnded)
+        .sort((a:any,b:any)=>{
+          const numA=extractMatchNumber(a.name||'');
+          const numB=extractMatchNumber(b.name||'');
+          if(numA!==numB) return numA-numB;
+          return new Date(a.dateTimeGMT||0).getTime()-new Date(b.dateTimeGMT||0).getTime();
+        });
+      const cachedIds=new Set(
+        Object.keys(localStorage).filter(k=>k.startsWith(SC_PREFIX)).map(k=>k.replace(SC_PREFIX,''))
+      );
+      const missing=completed.filter((m:any)=>!cachedIds.has(m.id));
+      if(missing.length===0){
+        // All cached — just reprocess from cache to ensure scores are up to date
+        const metas:MatchMeta[]=completed.map((m:any)=>({id:m.id,name:m.name||'Match',date:m.date||''}));
+        setMatchMetas(metas);setMatchesPlayed(completed.length);setCachedMetas(metas);
+        await reprocessAllFromCache(completed,metas);
+        return;
+      }
+      setApiStatus({state:'loading',msg:`Fetching ${missing.length} new match${missing.length>1?'es':''}…`});
+      for(const match of missing){
+        const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${match.id}`);
+        const md=await res.json();
+        if(md.status==='success') setCachedRaw(match.id,md.data?.scorecard||[]);
+        await new Promise(res=>setTimeout(res,300));
+      }
+      const metas:MatchMeta[]=completed.map((m:any)=>({id:m.id,name:m.name||'Match',date:m.date||''}));
+      setMatchMetas(metas);setMatchesPlayed(completed.length);setCachedMetas(metas);
+      await reprocessAllFromCache(completed,metas);
+      showToast(`✓ ${missing.length} new match${missing.length>1?'es':''} synced`);
+    }catch(e){
+      // Silent fail on auto-sync — don't alarm user, just use cached data
+    }
+  }
+
+  async function reprocessAllFromCache(completed:any[],metas:MatchMeta[]){
+    let currentScores:Scores={};
+    PLAYERS.forEach(p=>{currentScores[p.name]={runs:0,wickets:0,catches:0,stumpings:0,matchPts:[]};});
+    // Track unsold players across all matches
+    const unsoldMap:Record<string,UnsoldEntry>={};
+    for(const match of completed){
+      const scorecard=getCachedRaw(match.id) as any[]|null;
+      if(!scorecard) continue;
+      const result=processMatchData(scorecard,currentScores,unsoldMap);
+      currentScores=result.scores;
+    }
+    setScores(currentScores);setCachedScores(currentScores);
+    const unsoldList=Object.values(unsoldMap).sort((a,b)=>unsoldPts(b)-unsoldPts(a));
+    setUnsoldPlayers(unsoldList);setCachedUnsold(unsoldList);
+    setApiStatus({state:'ok',msg:`✓ Synced · ${completed.length} matches · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`});
+  }
+
+  // ── PROCESS A SINGLE MATCH SCORECARD ─────────────────────────────────────
+  function processMatchData(
+    scorecard:any[],
+    currentScores:Scores,
+    unsoldMap:Record<string,UnsoldEntry>
+  ):{scores:Scores}{
+    const updatedScores={...currentScores};
+    Object.keys(updatedScores).forEach(k=>{updatedScores[k]={...updatedScores[k],matchPts:[...updatedScores[k].matchPts]};});
+    const mPts:Record<string,number>={};
+
+    scorecard.forEach((innings:any)=>{
+      // BATTING
+      (innings.batting||[]).forEach((b:any)=>{
+        const apiName=b.batsman?.name;
+        const m=fuzzyMatch(apiName);
+        if(m&&updatedScores[m]){
+          updatedScores[m].runs+=(b.r||0);
+          mPts[m]=(mPts[m]||0)+(b.r||0)*POINTS.run;
+        } else if(apiName){
+          // Unsold player tracking
+          const lower=apiName.toLowerCase();
+          if(!EXCLUDED_API_NAMES.has(lower)&&!PLAYER_NAMES_SET.has(lower)){
+            const canonical=apiName.trim();
+            if(!unsoldMap[canonical]) unsoldMap[canonical]={name:canonical,runs:0,wickets:0,catches:0,stumpings:0};
+            unsoldMap[canonical].runs+=(b.r||0);
+          }
+        }
+        // Fielding from batting row
+        function fielder(row:any):string|null{
+          if(row.catcher?.name) return row.catcher.name;
+          const t=(row['dismissal-text']||'').trim();
+          if(/^c & b /i.test(t)) return t.replace(/^c & b /i,'').trim();
+          if(/^c /i.test(t)&&t.includes(' b ')) return t.substring(2,t.indexOf(' b ')).trim();
+          if(/^st /i.test(t)&&t.includes(' b ')) return t.substring(3,t.indexOf(' b ')).trim();
+          return null;
+        }
+        const dt=(b.dismissal||'').toLowerCase();
+        if(dt==='caught'||dt==='catch'){
+          const f=fuzzyMatch(fielder(b));
+          if(f&&updatedScores[f]){updatedScores[f].catches+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}
+        } else if(dt==='stumped'||dt==='st'){
+          const f=fuzzyMatch(fielder(b));
+          if(f&&updatedScores[f]){updatedScores[f].stumpings+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}
+        }
+      });
+      // BOWLING
+      (innings.bowling||[]).forEach((bw:any)=>{
+        const apiName=bw.bowler?.name;
+        const m=fuzzyMatch(apiName);
+        if(m&&updatedScores[m]){
+          updatedScores[m].wickets+=(bw.w||0);
+          mPts[m]=(mPts[m]||0)+(bw.w||0)*POINTS.wicket;
+        } else if(apiName){
+          const lower=apiName.toLowerCase();
+          if(!EXCLUDED_API_NAMES.has(lower)&&!PLAYER_NAMES_SET.has(lower)){
+            const canonical=apiName.trim();
+            if(!unsoldMap[canonical]) unsoldMap[canonical]={name:canonical,runs:0,wickets:0,catches:0,stumpings:0};
+            unsoldMap[canonical].wickets+=(bw.w||0);
+          }
+        }
+      });
+      // CATCHING ARRAY (most reliable for fielding)
+      (innings.catching||[]).forEach((c:any)=>{
+        const apiName=c.catcher?.name;
+        const m=fuzzyMatch(apiName);
+        if(m&&updatedScores[m]){
+          // Use catching array as authoritative source — reset and recount
+          // (catching array has definitive totals per innings)
+          updatedScores[m].catches+=(c.catch||0);
+          updatedScores[m].stumpings+=(c.stumped||0);
+          mPts[m]=(mPts[m]||0)+((c.catch||0)+(c.stumped||0))*POINTS.catch;
+        } else if(apiName){
+          const lower=apiName.toLowerCase();
+          if(!EXCLUDED_API_NAMES.has(lower)&&!PLAYER_NAMES_SET.has(lower)){
+            const canonical=apiName.trim();
+            if(!unsoldMap[canonical]) unsoldMap[canonical]={name:canonical,runs:0,wickets:0,catches:0,stumpings:0};
+            unsoldMap[canonical].catches+=(c.catch||0);
+            unsoldMap[canonical].stumpings+=(c.stumped||0);
+          }
+        }
+      });
+    });
+
+    Object.keys(updatedScores).forEach(name=>{updatedScores[name].matchPts.push(mPts[name]||0);});
+    return {scores:updatedScores};
+  }
+
+  // ── MANUAL FULL RESYNC (admin) ────────────────────────────────────────────
+  async function handleFullResync(){
+    clearAllCache();
+    setApiStatus({state:'loading',msg:'Full resync — clearing cache…'});
+    showToast('Clearing cache and resyncing all matches…');
+    try{
+      const r=await fetch(`https://api.cricapi.com/v1/series_info?apikey=${CRICAPI_KEY}&id=${IPL_2026_SERIES_ID}`);
+      const d=await r.json();
+      if(d.status!=='success') throw new Error(d.reason||'API error');
+      const completed=(d.data?.matchList||[])
+        .filter((m:any)=>m.matchStarted&&m.matchEnded)
+        .sort((a:any,b:any)=>{
+          const numA=extractMatchNumber(a.name||'');
+          const numB=extractMatchNumber(b.name||'');
+          if(numA!==numB) return numA-numB;
+          return new Date(a.dateTimeGMT||0).getTime()-new Date(b.dateTimeGMT||0).getTime();
+        });
+      setMatchesPlayed(completed.length);
+      const metas:MatchMeta[]=completed.map((m:any)=>({id:m.id,name:m.name||'Match',date:m.date||''}));
+      setMatchMetas(metas);setCachedMetas(metas);
+      let fetched=0;
+      for(const match of completed){
+        setApiStatus({state:'loading',msg:`Fetching M${fetched+1}/${completed.length}…`});
+        const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${match.id}`);
+        const md=await res.json();
+        if(md.status==='success') setCachedRaw(match.id,md.data?.scorecard||[]);
+        fetched++;
+        await new Promise(res=>setTimeout(res,300));
+      }
+      await reprocessAllFromCache(completed,metas);
+      showToast(`✓ Full resync complete · ${completed.length} matches`);
+    }catch(err:unknown){
+      const msg=err instanceof Error?err.message:'Check key';
+      setApiStatus({state:'err',msg:'Resync failed · '+msg});showToast('✗ '+msg);
+    }
+  }
+
+  // ── QUICK REFRESH (sync new matches only) ────────────────────────────────
+  async function handleRefresh(){
+    setApiStatus({state:'loading',msg:'Checking for new matches…'});
+    await autoSync();
+  }
+
+  // ── YOUTUBE PLAYER ────────────────────────────────────────────────────────
   useEffect(()=>{
     if(document.getElementById('yt-api-script')) return;
     const tag=document.createElement('script');tag.id='yt-api-script';tag.src='https://www.youtube.com/iframe_api';
@@ -321,83 +556,6 @@ export default function App(){
 
   function toggleAdmin(){if(isAdmin){setIsAdmin(false);sessionStorage.removeItem('auctionAdmin');showToast('Admin mode off');}else{setPinInput('');setPinError('');setShowPinModal(true);}}
   function checkPin(){if(pinInput===ADMIN_PIN){setIsAdmin(true);sessionStorage.setItem('auctionAdmin','1');setShowPinModal(false);showToast('✓ Admin mode on');}else{setPinError('Incorrect PIN — try again');setPinInput('');}}
-  function clearScorecardCache(){Object.keys(localStorage).filter(k=>k.startsWith(SC_PREFIX)).forEach(k=>localStorage.removeItem(k));}
-  async function handleRefresh(){clearScorecardCache();await syncScores();}
-
-  async function processMatch(matchId:string,currentScores:Scores):Promise<{scores:Scores;isNew:boolean}>{
-    try{
-      let scorecard=getCached(matchId) as any[]|null;let isNew=false;
-      if(!scorecard){
-        const r=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${matchId}`);
-        const d=await r.json();
-        if(d.status!=='success') return {scores:currentScores,isNew:false};
-        scorecard=d.data?.scorecard||[];setCache(matchId,scorecard);isNew=true;
-      }
-      const updatedScores={...currentScores};
-      Object.keys(updatedScores).forEach(k=>{updatedScores[k]={...updatedScores[k],matchPts:[...updatedScores[k].matchPts]};});
-      const mPts:Record<string,number>={};
-      scorecard!.forEach((innings:any)=>{
-        (innings.batting||[]).forEach((b:any)=>{
-          const m=fuzzyMatch(b.batsman?.name);
-          if(m&&updatedScores[m]){updatedScores[m].runs+=(b.r||0);mPts[m]=(mPts[m]||0)+(b.r||0)*POINTS.run;}
-          function fielder(row:any):string|null{
-            if(row.catcher?.name) return row.catcher.name;
-            const t=(row['dismissal-text']||'').trim();
-            if(/^c & b /i.test(t)) return t.replace(/^c & b /i,'').trim();
-            if(/^c /i.test(t)&&t.includes(' b ')) return t.substring(2,t.indexOf(' b ')).trim();
-            if(/^st /i.test(t)&&t.includes(' b ')) return t.substring(3,t.indexOf(' b ')).trim();
-            return null;
-          }
-          const dt=(b.dismissal||'').toLowerCase();
-          if(dt==='caught'||dt==='catch'){const f=fuzzyMatch(fielder(b));if(f&&updatedScores[f]){updatedScores[f].catches+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}}
-          else if(dt==='stumped'||dt==='st'){const f=fuzzyMatch(fielder(b));if(f&&updatedScores[f]){updatedScores[f].stumpings+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}}
-        });
-        (innings.bowling||[]).forEach((bw:any)=>{
-          const m=fuzzyMatch(bw.bowler?.name);
-          if(m&&updatedScores[m]){updatedScores[m].wickets+=(bw.w||0);mPts[m]=(mPts[m]||0)+(bw.w||0)*POINTS.wicket;}
-        });
-      });
-      Object.keys(updatedScores).forEach(name=>{updatedScores[name].matchPts.push(mPts[name]||0);});
-      return {scores:updatedScores,isNew};
-    }catch(e){return {scores:currentScores,isNew:false};}
-  }
-
-  async function syncScores(){
-    setApiStatus({state:'loading',msg:'Fetching IPL 2026 match list…'});
-    try{
-      const r=await fetch(`https://api.cricapi.com/v1/series_info?apikey=${CRICAPI_KEY}&id=${IPL_2026_SERIES_ID}`);
-      const d=await r.json();
-      if(d.status!=='success') throw new Error(d.reason||'API error');
-      // PRIMARY: match number from name ("1st Match" → 1). SECONDARY: date fallback.
-      const completed=(d.data?.matchList||[])
-        .filter((m:any)=>m.matchStarted&&m.matchEnded)
-        .sort((a:any,b:any)=>{
-          const numA=extractMatchNumber(a.name||'');
-          const numB=extractMatchNumber(b.name||'');
-          if(numA!==numB) return numA-numB;
-          const dA=new Date(a.dateTimeGMT||a.date||0).getTime();
-          const dB=new Date(b.dateTimeGMT||b.date||0).getTime();
-          return dA-dB;
-        });
-      setMatchesPlayed(completed.length);
-      const metas:MatchMeta[]=completed.map((m:any)=>({id:m.id,name:m.name||m.matchType||'Match',date:m.date||m.dateTimeGMT||''}));
-      setMatchMetas(metas);
-      let currentScores:Scores={};
-      PLAYERS.forEach(p=>{currentScores[p.name]={runs:0,wickets:0,catches:0,stumpings:0,matchPts:[]};});
-      let fetched=0,cached=0;
-      setApiStatus({state:'loading',msg:`Processing ${completed.length} matches…`});
-      for(const match of completed){
-        const result=await processMatch(match.id,currentScores);
-        currentScores=result.scores;result.isNew?fetched++:cached++;
-      }
-      setScores(currentScores);
-      setApiStatus({state:'ok',msg:`✓ Synced · ${completed.length} matches · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`});
-      showToast(`✓ ${completed.length} matches · ${fetched} new, ${cached} cached`);
-    }catch(err:unknown){
-      const msg=err instanceof Error?err.message:'Check key';
-      setApiStatus({state:'err',msg:'Sync failed · '+msg});showToast('✗ '+msg);
-    }
-  }
 
   function marqueeBadge(){return `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(57,255,20,0.12);border:1px solid rgba(57,255,20,0.35);border-radius:3px;padding:1px 5px;font-size:8px;font-weight:700;letter-spacing:1.5px;color:#39FF14;margin-left:5px;vertical-align:middle;white-space:nowrap;box-shadow:0 0 8px rgba(57,255,20,0.3)">⚡ MARQUEE</span>`;}
   function esc(s:string){return s.replace(/'/g,"\\'");}
@@ -461,14 +619,34 @@ export default function App(){
   const {ranked,topTeam,topPts,topP}=renderLeaderboard();
   const mvp=getMVP();
 
+  // ── ALL PLAYERS including unsold ─────────────────────────────────────────
   const filteredPlayers=useCallback(()=>{
-    return PLAYERS.filter(p=>{
+    const soldFiltered=PLAYERS.filter(p=>{
       if(activeFilter==='MARQUEE') return isMarquee(p.name);
+      if(activeFilter==='UNSOLD') return false;
       const rm=activeFilter==='ALL'||p.role===activeFilter;
       const qm=!searchQuery||p.name.toLowerCase().includes(searchQuery.toLowerCase())||(p.ipl||'').toLowerCase().includes(searchQuery.toLowerCase())||(ownerById(p.owner)?.name||'').toLowerCase().includes(searchQuery.toLowerCase());
       return rm&&qm;
-    }).sort((a,b)=>playerPts(b.name,scores)-playerPts(a.name,scores));
-  },[activeFilter,searchQuery,scores]);
+    }).map(p=>({
+      name:p.name,ipl:p.ipl,role:p.role,cost:p.cost,
+      owner:ownerById(p.owner)?.name||'—',ownerColor:ownerById(p.owner)?.color||'#7A8BAA',
+      pts:playerPts(p.name,scores),isMarquee:isMarquee(p.name),isUnsold:false,
+    })).sort((a,b)=>b.pts-a.pts);
+
+    if(activeFilter==='MARQUEE') return soldFiltered;
+
+    const unsoldFiltered=activeFilter==='ALL'||activeFilter==='UNSOLD'
+      ? unsoldPlayers
+          .filter(u=>!searchQuery||u.name.toLowerCase().includes(searchQuery.toLowerCase()))
+          .map(u=>({
+            name:u.name,ipl:'',role:'?',cost:0,
+            owner:'UNSOLD',ownerColor:'#E8003D',
+            pts:unsoldPts(u),isMarquee:false,isUnsold:true,
+          }))
+      : [];
+
+    return [...soldFiltered,...unsoldFiltered].sort((a,b)=>b.pts-a.pts);
+  },[activeFilter,searchQuery,scores,unsoldPlayers]);
 
   const progressSVG=useCallback(()=>{
     const W=680,H=340,PAD={top:20,right:120,bottom:40,left:52};
@@ -561,12 +739,15 @@ export default function App(){
         .role-BOWL{background:rgba(232,0,61,0.12);color:#E8003D;border:1px solid rgba(232,0,61,0.25);}
         .role-AR{background:rgba(255,215,0,0.12);color:#FFD700;border:1px solid rgba(255,215,0,0.25);}
         .role-WK{background:rgba(124,77,255,0.12);color:#7C4DFF;border:1px solid rgba(124,77,255,0.25);}
+        .role-\\?{background:rgba(122,139,170,0.12);color:#7A8BAA;border:1px solid rgba(122,139,170,0.25);}
         .marquee-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(57,255,20,0.12);border:1px solid rgba(57,255,20,0.35);border-radius:3px;padding:1px 5px;font-size:8px;font-weight:700;letter-spacing:1.5px;color:#39FF14;margin-left:5px;vertical-align:middle;white-space:nowrap;box-shadow:0 0 8px rgba(57,255,20,0.3);}
+        .unsold-badge{display:inline-flex;align-items:center;background:rgba(232,0,61,0.12);border:1px solid rgba(232,0,61,0.3);border-radius:3px;padding:1px 5px;font-size:8px;font-weight:700;letter-spacing:1.5px;color:#E8003D;margin-left:5px;vertical-align:middle;white-space:nowrap;}
         .pt-row{display:grid;grid-template-columns:1fr 55px 85px 75px;align-items:center;padding:0 1.1rem;height:46px;border-bottom:1px solid rgba(42,53,80,0.4);font-size:12px;cursor:pointer;transition:background 0.12s;}
         .pt-row:hover,.pt-row:active{background:rgba(255,255,255,0.03);}
         .pt-row:last-child{border-bottom:none;}
         .pt-row.hdr{background:#0D1119;height:32px;cursor:default;}
         .pt-row.is-marquee{background:rgba(57,255,20,0.04);}
+        .pt-row.is-unsold{background:rgba(232,0,61,0.02);}
         .team-card{background:#161D2A;border:1px solid #2A3550;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;}
         .team-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.5);}
         .team-card:active{transform:scale(0.99);}
@@ -673,9 +854,14 @@ export default function App(){
               <div style={{width:7,height:7,borderRadius:'50%',flexShrink:0,background:apiStatus.state==='ok'?'#00E676':apiStatus.state==='err'?'#E8003D':apiStatus.state==='loading'?'#FFD700':'#7A8BAA'}}></div>
               <span style={{color:'#7A8BAA',fontFamily:"'JetBrains Mono',monospace",fontSize:10,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} dangerouslySetInnerHTML={{__html:apiStatus.state==='loading'?`<span class="spinner"></span>${apiStatus.msg}`:apiStatus.msg}}></span>
             </div>
-            <button onClick={handleRefresh} disabled={apiStatus.state==='loading'} style={{background:apiStatus.state==='loading'?'#1C2538':'#FFD700',color:apiStatus.state==='loading'?'#7A8BAA':'#000',border:'none',borderRadius:6,padding:'8px 20px',fontFamily:"'Rajdhani',sans-serif",fontWeight:700,fontSize:13,letterSpacing:1.5,cursor:apiStatus.state==='loading'?'not-allowed':'pointer',flexShrink:0,minHeight:36}}>
-              {apiStatus.state==='loading'?'Syncing…':'↻ REFRESH'}
-            </button>
+            <div style={{display:'flex',gap:8,flexShrink:0}}>
+              <button onClick={handleRefresh} disabled={apiStatus.state==='loading'} style={{background:apiStatus.state==='loading'?'#1C2538':'#FFD700',color:apiStatus.state==='loading'?'#7A8BAA':'#000',border:'none',borderRadius:6,padding:'8px 16px',fontFamily:"'Rajdhani',sans-serif",fontWeight:700,fontSize:13,letterSpacing:1.5,cursor:apiStatus.state==='loading'?'not-allowed':'pointer',minHeight:36}}>
+                {apiStatus.state==='loading'?'Syncing…':'↻ REFRESH'}
+              </button>
+              <button onClick={handleFullResync} disabled={apiStatus.state==='loading'} title="Clear all cache and re-fetch every match from scratch" style={{background:'transparent',color:'#7A8BAA',border:'1px solid #2A3550',borderRadius:6,padding:'8px 12px',fontFamily:"'Rajdhani',sans-serif",fontWeight:700,fontSize:11,letterSpacing:1,cursor:apiStatus.state==='loading'?'not-allowed':'pointer',minHeight:36,whiteSpace:'nowrap'}}>
+                ⚠ FORCE RESYNC
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -806,21 +992,24 @@ export default function App(){
           </div>
         )}
 
-        {/* PLAYERS */}
+        {/* PLAYERS — includes unsold */}
         {activeView==='auction'&&(
           <div>
             <div className="section-hdr" style={{display:'flex',alignItems:'center',gap:10,marginBottom:'1rem'}}>
-              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,letterSpacing:3}}>PLAYER POOL</div>
+              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,letterSpacing:3}}>ALL PLAYERS</div>
               <div style={{flex:1,height:1,background:'linear-gradient(90deg,#2A3550,transparent)'}}></div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:'#FFD700',background:'rgba(255,215,0,0.1)',border:'1px solid rgba(255,215,0,0.2)',padding:'3px 8px',borderRadius:3}}>{PLAYERS.length} PLAYERS</div>
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:'#FFD700',background:'rgba(255,215,0,0.1)',border:'1px solid rgba(255,215,0,0.2)',padding:'3px 8px',borderRadius:3}}>{PLAYERS.length + unsoldPlayers.length} PLAYERS</div>
             </div>
             <div className="auction-wrap" style={{display:'grid',gridTemplateColumns:'1fr 260px',gap:'1.5rem'}}>
               <div style={{background:'#161D2A',border:'1px solid #2A3550',borderRadius:12,overflow:'hidden'}}>
                 <div style={{padding:'.75rem 1rem',borderBottom:'1px solid #2A3550',display:'flex',gap:6,flexWrap:'wrap'}}>
                   <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search player, IPL team or owner…" style={{flex:1,minWidth:100,background:'#0D1119',border:'1px solid #2A3550',borderRadius:6,color:'#E8EDF5',fontFamily:"'Rajdhani',sans-serif",fontSize:13,padding:'8px 10px',outline:'none'}}/>
                   <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-                    {['ALL','BAT','BOWL','AR','WK','MARQUEE'].map(f=>(
-                      <button key={f} className={`filter-btn${activeFilter===f?' active':''}`} onClick={()=>setActiveFilter(f)}>{f==='MARQUEE'?'⚡':f}</button>
+                    {['ALL','BAT','BOWL','AR','WK','MARQUEE','UNSOLD'].map(f=>(
+                      <button key={f} className={`filter-btn${activeFilter===f?' active':''}`} onClick={()=>setActiveFilter(f)}
+                        style={f==='UNSOLD'&&activeFilter===f?{borderColor:'#E8003D',color:'#E8003D',background:'rgba(232,0,61,0.08)'}:f==='UNSOLD'?{color:'#E8003D',borderColor:'rgba(232,0,61,0.3)'}:{}}>
+                        {f==='MARQUEE'?'⚡':f==='UNSOLD'?'UNSOLD':f}
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -831,20 +1020,29 @@ export default function App(){
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:'#7A8BAA',textTransform:'uppercase',textAlign:'right'}}>Points</div>
                 </div>
                 {filteredPlayers().length>0?filteredPlayers().map(p=>{
-                  const owner=ownerById(p.owner);const pp=playerPts(p.name,scores);const mq=isMarquee(p.name);
-                  return(<div key={p.name} className={`pt-row${mq?' is-marquee':''}`} onClick={()=>openPlayerModal(p.name)}>
+                  const pp=p.pts;const mq=p.isMarquee;const isUnsold=p.isUnsold;
+                  return(<div key={p.name} className={`pt-row${mq?' is-marquee':''}${isUnsold?' is-unsold':''}`}
+                    onClick={()=>{if(!isUnsold) openPlayerModal(p.name);}}>
                     <div>
-                      <div style={{fontSize:13,fontWeight:600}} dangerouslySetInnerHTML={{__html:`${p.name}${mq?marqueeBadge():''}`}}></div>
-                      <div style={{fontSize:9,color:'#7A8BAA',letterSpacing:1}}>{p.ipl||'UNSOLD'} · ₹{p.cost}L</div>
+                      <div style={{fontSize:13,fontWeight:600}} dangerouslySetInnerHTML={{__html:`${p.name}${mq?marqueeBadge():''}${isUnsold?'<span class="unsold-badge">UNSOLD</span>':''}`}}></div>
+                      <div style={{fontSize:9,color:'#7A8BAA',letterSpacing:1}}>{p.ipl||'—'}{p.cost>0?` · ₹${p.cost}L`:''}</div>
                     </div>
                     <div style={{textAlign:'right'}}><span className={`p-role role-${p.role}`}>{p.role}</span></div>
-                    <div className="pt-col-hide" style={{textAlign:'right',fontSize:11,color:'#7A8BAA'}}>{owner?.name||'—'}</div>
+                    <div className="pt-col-hide" style={{textAlign:'right',fontSize:11,color:p.ownerColor||'#7A8BAA'}}>{p.owner}</div>
                     <div style={{textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontWeight:700,fontSize:12,color:pp>0?'#FFD700':'#7A8BAA'}}>{pp}</div>
                   </div>);
                 }):<div style={{padding:'2rem',textAlign:'center',color:'#7A8BAA'}}>No players match</div>}
+                {unsoldPlayers.length===0&&matchesPlayed>0&&activeFilter==='ALL'&&(
+                  <div style={{padding:'1rem',textAlign:'center',color:'#7A8BAA',fontSize:11,borderTop:'1px solid #1e2a3a'}}>
+                    Unsold players will appear after a Force Resync
+                  </div>
+                )}
               </div>
               <div className="auction-sidebar">
-                {[{label:'Total Players',val:PLAYERS.length.toString(),sub:'across 8 teams',valColor:'#00D4FF'},{label:'Highest Bid',val:'₹22.5L',sub:'Virat Kohli → Ashutosh',valColor:'#FFD700'}].map((sc,i)=>(
+                {[
+                  {label:'Total Players',val:(PLAYERS.length+unsoldPlayers.length).toString(),sub:`${PLAYERS.length} sold · ${unsoldPlayers.length} unsold`,valColor:'#00D4FF'},
+                  {label:'Highest Bid',val:'₹22.5L',sub:'Virat Kohli → Ashutosh',valColor:'#FFD700'}
+                ].map((sc,i)=>(
                   <div key={i} style={{background:'#161D2A',border:'1px solid #2A3550',borderRadius:10,padding:'1.1rem',marginBottom:'1rem'}}>
                     <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:'#7A8BAA',marginBottom:6}}>{sc.label}</div>
                     <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:34,lineHeight:1,color:sc.valColor}}>{sc.val}</div>
