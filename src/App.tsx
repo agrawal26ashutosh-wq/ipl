@@ -395,7 +395,7 @@ export default function App(){
     const mPts:Record<string,number>={};
 
     scorecard.forEach((innings:any)=>{
-      // BATTING
+      // BATTING — runs only. Fielding is handled exclusively by the catching array below.
       (innings.batting||[]).forEach((b:any)=>{
         const apiName=b.batsman?.name;
         const m=fuzzyMatch(apiName);
@@ -403,30 +403,13 @@ export default function App(){
           updatedScores[m].runs+=(b.r||0);
           mPts[m]=(mPts[m]||0)+(b.r||0)*POINTS.run;
         } else if(apiName){
-          // Unsold player tracking
+          // Unsold player tracking — runs only
           const lower=apiName.toLowerCase();
           if(!EXCLUDED_API_NAMES.has(lower)&&!PLAYER_NAMES_SET.has(lower)){
             const canonical=apiName.trim();
             if(!unsoldMap[canonical]) unsoldMap[canonical]={name:canonical,runs:0,wickets:0,catches:0,stumpings:0};
             unsoldMap[canonical].runs+=(b.r||0);
           }
-        }
-        // Fielding from batting row
-        function fielder(row:any):string|null{
-          if(row.catcher?.name) return row.catcher.name;
-          const t=(row['dismissal-text']||'').trim();
-          if(/^c & b /i.test(t)) return t.replace(/^c & b /i,'').trim();
-          if(/^c /i.test(t)&&t.includes(' b ')) return t.substring(2,t.indexOf(' b ')).trim();
-          if(/^st /i.test(t)&&t.includes(' b ')) return t.substring(3,t.indexOf(' b ')).trim();
-          return null;
-        }
-        const dt=(b.dismissal||'').toLowerCase();
-        if(dt==='caught'||dt==='catch'){
-          const f=fuzzyMatch(fielder(b));
-          if(f&&updatedScores[f]){updatedScores[f].catches+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}
-        } else if(dt==='stumped'||dt==='st'){
-          const f=fuzzyMatch(fielder(b));
-          if(f&&updatedScores[f]){updatedScores[f].stumpings+=1;mPts[f]=(mPts[f]||0)+POINTS.catch;}
         }
       });
       // BOWLING
@@ -445,7 +428,7 @@ export default function App(){
           }
         }
       });
-      // CATCHING ARRAY (most reliable for fielding)
+      // CATCHING ARRAY — sole authoritative source for all fielding points (catches + stumpings)
       (innings.catching||[]).forEach((c:any)=>{
         const apiName=c.catcher?.name;
         const m=fuzzyMatch(apiName);
