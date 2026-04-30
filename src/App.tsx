@@ -603,11 +603,16 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
           .teams-grid{grid-template-columns:1fr!important;}.pt-row{grid-template-columns:1fr 48px 75px;}.pt-col-hide{display:none!important;}
           .stats-strip{grid-template-columns:repeat(2,1fr)!important;gap:.6rem!important;}
           .mvp-grid{grid-template-columns:1fr 1fr!important;}.auction-wrap{grid-template-columns:1fr!important;}.auction-sidebar{display:none!important;}
-          main{padding:1rem .75rem!important;padding-bottom:150px!important;}
+          main{padding:1rem .75rem!important;padding-bottom:120px!important;}
           .match-banner{flex-direction:column!important;gap:10px!important;align-items:flex-start!important;}
           .section-hdr{flex-wrap:wrap;gap:6px!important;}.raw-team-btn{font-size:11px;padding:5px 9px;}
-          #music-player{bottom:.75rem!important;left:.75rem!important;right:.75rem!important;width:auto!important;max-width:320px;}
           .modal-sheet{border-radius:18px 18px 0 0!important;max-height:92vh!important;width:100%!important;max-width:100%!important;}
+          /* Mobile nav - full screen overlay so it's never clipped */
+          .mobile-nav{position:fixed!important;top:60px!important;left:0!important;right:0!important;bottom:0!important;background:#080B10!important;z-index:200!important;overflow-y:auto!important;padding:8px 12px 40px!important;border-bottom:none!important;}
+          .mobile-nav-btn{font-size:17px!important;padding:16px 14px!important;border-bottom:1px solid rgba(42,53,80,0.4);}
+          /* Music player - compact strip on mobile */
+          #music-player{bottom:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;border-radius:12px 12px 0 0!important;border-left:none!important;border-right:none!important;border-bottom:none!important;}
+          .mp-expanded-mobile{display:none!important;}
         }
         @media(max-width:400px){.header-logo{font-size:18px!important;}.stats-strip{grid-template-columns:1fr 1fr!important;}}
       `}</style>
@@ -640,11 +645,17 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
             </div>
             <button className="hamburger" onClick={()=>setMobileNavOpen(o=>!o)}>{mobileNavOpen?'✕':'☰'}</button>
           </div>
+          {mobileNavOpen&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:199}} onClick={()=>setMobileNavOpen(false)}/>}
           <div className={`mobile-nav${mobileNavOpen?' open':''}`}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px 8px',borderBottom:'1px solid rgba(42,53,80,0.5)',marginBottom:4}}>
+              <span style={{fontSize:11,fontWeight:700,letterSpacing:2,color:'#7A8BAA',textTransform:'uppercase'}}>Navigation</span>
+              <button onClick={()=>setMobileNavOpen(false)} style={{background:'none',border:'1px solid #2A3550',color:'#7A8BAA',width:32,height:32,borderRadius:6,fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+            </div>
             {(['leaderboard','teams','auction','progress','rawstats'] as ActiveView[]).map(v=>(
               <button key={v} className={`mobile-nav-btn${activeView===v?' active':''}`} onClick={()=>navTo(v)}>
-                <span style={{fontSize:18}}>{v==='leaderboard'?'🏆':v==='teams'?'👥':v==='auction'?'🎯':v==='progress'?'📈':'📊'}</span>
-                {v==='leaderboard'?'Leaderboard':v==='teams'?'Teams':v==='auction'?'Players':v==='progress'?'Progress':'Raw Stats'}
+                <span style={{fontSize:22,width:32,textAlign:'center'}}>{v==='leaderboard'?'🏆':v==='teams'?'👥':v==='auction'?'🎯':v==='progress'?'📈':'📊'}</span>
+                <span>{v==='leaderboard'?'Leaderboard':v==='teams'?'Teams':v==='auction'?'Players':v==='progress'?'Progress':'Raw Stats'}</span>
+                {activeView===v&&<span style={{marginLeft:'auto',color:'#FFD700',fontSize:12}}>●</span>}
               </button>
             ))}
             {isAdmin&&<button className="mobile-sync-btn" onClick={()=>{handleRefresh();setMobileNavOpen(false);}}>↻ SYNC SCORES</button>}
@@ -917,6 +928,7 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
       </main>
 
       <div id="music-player" style={{position:'fixed',bottom:'1.25rem',left:'1.25rem',zIndex:400,background:'linear-gradient(135deg,#0D1119,#161D2A)',border:'1px solid #2A3550',borderRadius:14,boxShadow:'0 8px 40px rgba(0,0,0,0.7)',width:musicCollapsed?175:275,overflow:'hidden',transition:'all 0.3s cubic-bezier(0.34,1.2,0.64,1)',userSelect:'none'}}>
+        {/* Desktop: title bar + collapse toggle */}
         <div style={{display:'flex',alignItems:'center',gap:9,padding:'9px 11px 7px',borderBottom:'1px solid rgba(42,53,80,0.5)'}}>
           <div style={{width:32,height:32,background:'linear-gradient(135deg,#FFD700,#FF6B00)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0,animation:isPlaying?'spin-disc 3s linear infinite':undefined}}>🎵</div>
           <div style={{flex:1,minWidth:0}}>
@@ -932,7 +944,7 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
           {!musicCollapsed&&(<div style={{flex:1,display:'flex',alignItems:'center',gap:5}}><span style={{fontSize:12,color:'#7A8BAA'}}>🔊</span><input type="range" min="0" max="100" value={volume} onChange={e=>handleVolumeChange(parseInt(e.target.value))} style={{flex:1,height:3,background:'#2A3550',borderRadius:2,outline:'none',cursor:'pointer',WebkitAppearance:'none'}}/></div>)}
         </div>
         {!musicCollapsed&&(
-          <div style={{borderTop:'1px solid rgba(42,53,80,0.5)',padding:'4px 0'}}>
+          <div className="mp-expanded-mobile" style={{borderTop:'1px solid rgba(42,53,80,0.5)',padding:'4px 0'}}>
             {TRACKS.map((t,i)=>(
               <div key={i} className={`mp-ti${i===currentTrack?' active':''}`} onClick={()=>{setCurrentTrack(i);doTrack(i);}}>
                 <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:i===currentTrack?'#FFD700':'#7A8BAA',minWidth:14}}>{i+1}</span>
