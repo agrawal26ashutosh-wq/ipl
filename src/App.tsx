@@ -253,7 +253,7 @@ export default function App(){
   const [activeFilter,setActiveFilter]=useState('ALL');
   const [playerPhase,setPlayerPhase]=useState<PhaseView>('full');
   const [teamsPhase,setTeamsPhase]=useState<PhaseView>('full');
-  const [rawPhase,setRawPhase]=useState<PhaseView>('full');
+  const [rawPhase,setRawPhase]=useState<PhaseView>('phase1');
   const [searchQuery,setSearchQuery]=useState('');
   const [matchesPlayed,setMatchesPlayed]=useState(()=>getCachedMetas()?.length||0);
   const [isAdmin,setIsAdmin]=useState(sessionStorage.getItem('auctionAdmin')==='1');
@@ -879,7 +879,7 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
               <div style={{flex:1,height:1,background:'linear-gradient(90deg,#2A3550,transparent)'}}></div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:'#7A8BAA',background:'rgba(42,53,80,0.3)',border:'1px solid #2A3550',padding:'3px 8px',borderRadius:3}}>{matchesPlayed} MATCHES</div>
             </div>
-            <PT value={rawPhase} onChange={setRawPhase}/>
+            <PT value={rawPhase} onChange={(v)=>{if(v!=='full')setRawPhase(v);}} showFull={false}/>
             <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:'1.25rem'}}>
               {OWNERS.map(o=>(
                 <button key={o.id} className={`raw-team-btn${rawTeam===o.id?' active':''}`} onClick={()=>setRawTeam(o.id)} style={{borderColor:rawTeam===o.id?o.color:undefined,color:rawTeam===o.id?o.color:undefined,background:rawTeam===o.id?`${o.color}15`:undefined}}>{o.name}</button>
