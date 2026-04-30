@@ -195,12 +195,13 @@ function ownerById(id:number):OwnerType|undefined{return OWNERS.find(o=>o.id===i
 function p2OwnerById(id:number){return PHASE2_OWNERS.find(o=>o.id===id);}
 
 function teamPts(ownerId:number,scores:Scores,phase:PhaseView='full'):number{
-  if(phase==='full'){
-    const all=new Set([...PLAYERS.filter(p=>p.owner===ownerId).map(p=>p.name),...PHASE2_PLAYERS.filter(p=>p.owner===ownerId).map(p=>p.name)]);
-    let t=0;all.forEach(n=>{const s=scores[n];if(s)t+=s.matchPts.reduce((a,b)=>a+b,0);});return t;
-  }
-  if(phase==='phase1')return PLAYERS.filter(p=>p.owner===ownerId).reduce((s,p)=>{const sc=scores[p.name];return s+(sc?sc.matchPts.slice(0,PHASE2_FROM_MATCH-1).reduce((a,b)=>a+b,0):0);},0);
-  return PHASE2_PLAYERS.filter(p=>p.owner===ownerId).reduce((s,p)=>{const sc=scores[p.name];return s+(sc?sc.matchPts.slice(PHASE2_FROM_MATCH-1).reduce((a,b)=>a+b,0):0);},0);
+  // phase1: M1–M35 points for Phase 1 squad only
+  const p1=PLAYERS.filter(p=>p.owner===ownerId).reduce((s,p)=>{const sc=scores[p.name];return s+(sc?sc.matchPts.slice(0,PHASE2_FROM_MATCH-1).reduce((a,b)=>a+b,0):0);},0);
+  // phase2: M36+ points for Phase 2 squad only
+  const p2=PHASE2_PLAYERS.filter(p=>p.owner===ownerId).reduce((s,p)=>{const sc=scores[p.name];return s+(sc?sc.matchPts.slice(PHASE2_FROM_MATCH-1).reduce((a,b)=>a+b,0):0);},0);
+  if(phase==='phase1')return p1;
+  if(phase==='phase2')return p2;
+  return p1+p2; // full = phase1 + phase2, always consistent
 }
 function sortedTeams(scores:Scores){return[...OWNERS].sort((a,b)=>teamPts(b.id,scores,'full')-teamPts(a.id,scores,'full'));}
 
@@ -288,9 +289,9 @@ export default function App(){
       const cachedIds=new Set(Object.keys(localStorage).filter(k=>k.startsWith(SC_PREFIX)).map(k=>k.replace(SC_PREFIX,'')));
       const missing=completed.filter((m:any)=>!cachedIds.has(m.id));
       const metas:MatchMeta[]=completed.map((m:any,i:number)=>({id:m.id,name:m.name||'Match',date:m.date||'',matchNum:extractMatchNumber(m.name||'')||i+1}));
-      if(missing.length===0){setMatchMetas(metas);setMatchesPlayed(completed.length);setCachedMetas(metas);await reprocess(completed,metas);return;}
+      const validCompleted=completed.filter((m:any)=>{const c=getCachedRaw(m.id) as any;return Array.isArray(c)&&c.length>0;});if(missing.length===0){setMatchMetas(metas);setMatchesPlayed(validCompleted.length);setCachedMetas(metas);await reprocess(completed,metas);return;}
       setApiStatus({state:'loading',msg:`Fetching ${missing.length} new match${missing.length>1?'es':''}…`});
-      for(const match of missing){const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${match.id}`);const md=await res.json();if(md.status==='success')setCachedRaw(match.id,md.data?.scorecard||[]);await new Promise(r=>setTimeout(r,300));}
+      for(const match of missing){const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${match.id}`);const md=await res.json();const sc=md.data?.scorecard||[];if(md.status==='success'&&sc.length>0)setCachedRaw(match.id,sc);await new Promise(r=>setTimeout(r,300));}
       setMatchMetas(metas);setMatchesPlayed(completed.length);setCachedMetas(metas);
       await reprocess(completed,metas);showToast(`✓ ${missing.length} new match${missing.length>1?'es':''} synced`);
     }catch{}
@@ -298,7 +299,7 @@ export default function App(){
 
   async function reprocess(completed:any[],metas:MatchMeta[]){
     let sc:Scores=initScores();const unsoldMap:Record<string,UnsoldEntry>={};
-    for(let i=0;i<completed.length;i++){const card=getCachedRaw(completed[i].id) as any[]|null;if(!card)continue;sc=processMatch(card,sc,unsoldMap,metas[i]?.matchNum||i+1).scores;}
+    for(let i=0;i<completed.length;i++){const card=getCachedRaw(completed[i].id) as any[]|null;if(!card||!Array.isArray(card)||card.length===0)continue;sc=processMatch(card,sc,unsoldMap,metas[i]?.matchNum||i+1).scores;}
     setScores(sc);setCachedScores(sc);
     const ul=Object.values(unsoldMap).sort((a,b)=>unsoldPts(b)-unsoldPts(a));setUnsoldPlayers(ul);setCachedUnsold(ul);
     setApiStatus({state:'ok',msg:`✓ Synced · ${completed.length} matches · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`});
@@ -338,7 +339,7 @@ export default function App(){
       const completed=(d.data?.matchList||[]).filter((m:any)=>m.matchStarted&&m.matchEnded).sort((a:any,b:any)=>{const na=extractMatchNumber(a.name||''),nb=extractMatchNumber(b.name||'');if(na!==nb)return na-nb;return new Date(a.dateTimeGMT||0).getTime()-new Date(b.dateTimeGMT||0).getTime();});
       const metas:MatchMeta[]=completed.map((m:any,i:number)=>({id:m.id,name:m.name||'Match',date:m.date||'',matchNum:extractMatchNumber(m.name||'')||i+1}));
       setMatchesPlayed(completed.length);setMatchMetas(metas);setCachedMetas(metas);
-      for(let i=0;i<completed.length;i++){setApiStatus({state:'loading',msg:`Fetching M${i+1}/${completed.length}…`});const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${completed[i].id}`);const md=await res.json();if(md.status==='success')setCachedRaw(completed[i].id,md.data?.scorecard||[]);await new Promise(r=>setTimeout(r,300));}
+      for(let i=0;i<completed.length;i++){setApiStatus({state:'loading',msg:`Fetching M${i+1}/${completed.length}…`});const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${completed[i].id}`);const md=await res.json();const sc2=md.data?.scorecard||[];if(md.status==='success'&&sc2.length>0)setCachedRaw(completed[i].id,sc2);await new Promise(r=>setTimeout(r,300));}
       await reprocess(completed,metas);showToast(`✓ Full resync complete · ${completed.length} matches`);
     }catch(err:unknown){const msg=err instanceof Error?err.message:'Check key';setApiStatus({state:'err',msg:'Resync failed · '+msg});showToast('✗ '+msg);}
   }
@@ -369,10 +370,18 @@ export default function App(){
   function esc(s:string){return s.replace(/'/g,"\\'");}
 
   function getTeamCumulative(ownerId:number):number[]{
-    const all=new Set([...PLAYERS.filter(p=>p.owner===ownerId).map(p=>p.name),...PHASE2_PLAYERS.filter(p=>p.owner===ownerId).map(p=>p.name)]);
-    const maxLen=Math.max(...[...all].map(n=>(scores[n]?.matchPts||[]).length),0);
-    if(!maxLen)return[];const cum:number[]=[]; let run=0;
-    for(let i=0;i<maxLen;i++){let mt=0;all.forEach(n=>{mt+=(scores[n]?.matchPts||[])[i]||0;});run+=mt;cum.push(run);}
+    const p1Names=PLAYERS.filter(p=>p.owner===ownerId).map(p=>p.name);
+    const p2Names=PHASE2_PLAYERS.filter(p=>p.owner===ownerId).map(p=>p.name);
+    const allNames=new Set([...p1Names,...p2Names]);
+    const maxLen=Math.max(...[...allNames].map(n=>(scores[n]?.matchPts||[]).length),0);
+    if(!maxLen)return[];
+    const cum:number[]=[]; let run=0;
+    for(let i=0;i<maxLen;i++){
+      const isP2=i>=PHASE2_FROM_MATCH-1;
+      const activeNames=isP2?p2Names:p1Names;
+      let mt=0;activeNames.forEach(n=>{mt+=(scores[n]?.matchPts||[])[i]||0;});
+      run+=mt;cum.push(run);
+    }
     return cum;
   }
 
@@ -480,7 +489,7 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
     const numM=Math.max(endIdx-startIdx,0);const cols=Array.from({length:numM},(_,i)=>i);
     const td=(c:string|number,s='')=>`<td style="padding:5px 8px;border:1px solid #1e2a3a;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;${s}">${c}</td>`;
     const th=(c:string,s='')=>`<th style="padding:5px 8px;border:1px solid #1e2a3a;font-size:10px;font-weight:700;letter-spacing:1px;background:#0a0f18;white-space:nowrap;text-align:center;${s}">${c}</th>`;
-    const mTitle=(i:number)=>{const m=matchMetas[startIdx+i];return m?m.name.replace(/,.*$/,'').trim():`M${startIdx+i+1}`;};
+    const mTitle=(i:number)=>{const m=matchMetas[startIdx+i];if(!m)return `Match ${startIdx+i+1}`;const teams=m.name.replace(/,.*$/,'').trim();return `${teams} (M${startIdx+i+1})`;};
     let rows='';const teamMP=Array(numM).fill(0);
     for(const p of squad){
       const s=scores[p.name]||{runs:0,wickets:0,catches:0,stumpings:0,matchPts:[]};
@@ -493,7 +502,7 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
     const tf=teamMP.reduce((a,b)=>a+b,0);
     const totMC=teamMP.map(v=>td(v>0?`+${v}`:'—',`color:${v>0?'#FFD700':'#3a4a60'};text-align:center;font-weight:700;`)).join('');
     const totRow=`<tr style="background:#0a0f18;font-weight:700;">${td('TEAM TOTAL','color:#FFD700;font-weight:700;font-size:12px;')}${td('')}${td('')}${td(tf,`color:#FFD700;text-align:right;font-weight:700;font-size:13px;`)}${totMC}</tr>`;
-    const mHdrs=cols.map(i=>th(`<span title="${mTitle(i)}" style="cursor:help">M${startIdx+i+1}</span>`,'min-width:44px;')).join('');
+    const mHdrs=cols.map(i=>{const m=matchMetas[startIdx+i];const teams=m?m.name.replace(/,.*$/,'').trim().replace(' vs ','/').replace(' VS ','/'):null;return th(`<span title="${mTitle(i)}" style="cursor:help">${teams||'M'+String(startIdx+i+1)}</span>`,'min-width:60px;font-size:9px;');}).join('');
     return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${th('Player','text-align:left;min-width:140px;')}${th('Role')}${th('IPL')}${th('Points','color:#FFD700;')}${mHdrs}</tr></thead><tbody>${rows}${totRow}</tbody></table></div>`;
   }
 
