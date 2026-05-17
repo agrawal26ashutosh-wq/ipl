@@ -489,8 +489,12 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
     const ownerColor=OWNERS.find(o=>o.id===rawTeam)?.color||'#FFD700';
     const squad=(isP2?PHASE2_PLAYERS:PLAYERS).filter(p=>p.owner===rawTeam).sort((a,b)=>{const ap=(scores[a.name]?.matchPts||[]).reduce((x,y)=>x+y,0);const bp=(scores[b.name]?.matchPts||[]).reduce((x,y)=>x+y,0);return bp-ap;});
     const startIdx=isP2?PHASE2_FROM_MATCH-1:0;
-    // Cap at matchMetas.length — only matches with valid cached scorecards are in metas
-    const endIdx=isP1?PHASE2_FROM_MATCH-1:matchMetas.length;
+    // Use matchMetas filtered to only those with valid cached scorecards
+    const validMetaCount=matchMetas.filter((_:any,i:number)=>{
+      const name=`ipl26_sc_${matchMetas[i]?.id}`;
+      try{const v=localStorage.getItem(name);return v&&JSON.parse(v)?.length>0;}catch{return false;}
+    }).length;
+    const endIdx=isP1?PHASE2_FROM_MATCH-1:validMetaCount;
     const numM=Math.max(endIdx-startIdx,0);const cols=Array.from({length:numM},(_,i)=>i);
     const td=(c:string|number,s='')=>`<td style="padding:5px 8px;border-bottom:1px solid #1e2a3a;border-right:1px solid #1e2a3a;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;${s}">${c}</td>`;
     const th=(c:string,s='')=>`<th style="padding:5px 8px;border-bottom:1px solid #1e2a3a;border-right:1px solid #1e2a3a;font-size:10px;font-weight:700;letter-spacing:1px;background:#0a0f18;white-space:nowrap;text-align:center;${s}">${c}</th>`;
