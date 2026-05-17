@@ -291,8 +291,8 @@ export default function App(){
       const metas:MatchMeta[]=completed.map((m:any,i:number)=>({id:m.id,name:m.name||'Match',date:m.date||'',matchNum:extractMatchNumber(m.name||'')||i+1}));
       const validCompleted=completed.filter((m:any)=>{const c=getCachedRaw(m.id) as any;return Array.isArray(c)&&c.length>0;});if(missing.length===0){setMatchMetas(metas);setMatchesPlayed(validCompleted.length);setCachedMetas(metas);await reprocess(completed,metas);return;}
       setApiStatus({state:'loading',msg:`Fetching ${missing.length} new match${missing.length>1?'es':''}…`});
-      for(const match of missing){const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${match.id}`);const md=await res.json();const sc=md.data?.scorecard||[];if(md.status==='success'&&sc.length>0)setCachedRaw(match.id,sc);await new Promise(r=>setTimeout(r,300));}
-      setMatchMetas(metas);setMatchesPlayed(completed.length);setCachedMetas(metas);
+      for(const match of missing){try{const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${match.id}`);const text=await res.text();let md:any={};try{md=JSON.parse(text);}catch{}const sc=md.data?.scorecard||[];if(md.status==='success'&&sc.length>0)setCachedRaw(match.id,sc);}catch{}await new Promise(r=>setTimeout(r,300));}
+      setMatchMetas(metas);setCachedMetas(metas);
       await reprocess(completed,metas);showToast(`✓ ${missing.length} new match${missing.length>1?'es':''} synced`);
     }catch{}
   }
@@ -302,7 +302,10 @@ export default function App(){
     for(let i=0;i<completed.length;i++){const card=getCachedRaw(completed[i].id) as any[]|null;if(!card||!Array.isArray(card)||card.length===0)continue;sc=processMatch(card,sc,unsoldMap,metas[i]?.matchNum||i+1).scores;}
     setScores(sc);setCachedScores(sc);
     const ul=Object.values(unsoldMap).sort((a,b)=>unsoldPts(b)-unsoldPts(a));setUnsoldPlayers(ul);setCachedUnsold(ul);
-    setApiStatus({state:'ok',msg:`✓ Synced · ${completed.length} matches · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`});
+    const scoredCount=completed.filter((m:any)=>{const c=getCachedRaw(m.id) as any;return Array.isArray(c)&&c.length>0;}).length;
+    setMatchesPlayed(scoredCount);
+    const pendingMsg=scoredCount<completed.length?` · ${completed.length-scoredCount} pending CricAPI`:'';
+    setApiStatus({state:'ok',msg:`✓ Synced · ${scoredCount} scored of ${completed.length} played${pendingMsg} · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`});
   }
 
   function processMatch(scorecard:any[],cs:Scores,unsoldMap:Record<string,UnsoldEntry>,matchNum:number):{scores:Scores}{
@@ -338,8 +341,8 @@ export default function App(){
       const d=await r.json();if(d.status!=='success')throw new Error(d.reason||'API error');
       const completed=(d.data?.matchList||[]).filter((m:any)=>m.matchStarted&&m.matchEnded).sort((a:any,b:any)=>{const na=extractMatchNumber(a.name||''),nb=extractMatchNumber(b.name||'');if(na!==nb)return na-nb;return new Date(a.dateTimeGMT||0).getTime()-new Date(b.dateTimeGMT||0).getTime();});
       const metas:MatchMeta[]=completed.map((m:any,i:number)=>({id:m.id,name:m.name||'Match',date:m.date||'',matchNum:extractMatchNumber(m.name||'')||i+1}));
-      setMatchesPlayed(completed.length);setMatchMetas(metas);setCachedMetas(metas);
-      for(let i=0;i<completed.length;i++){setApiStatus({state:'loading',msg:`Fetching M${i+1}/${completed.length}…`});const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${completed[i].id}`);const md=await res.json();const sc2=md.data?.scorecard||[];if(md.status==='success'&&sc2.length>0)setCachedRaw(completed[i].id,sc2);await new Promise(r=>setTimeout(r,300));}
+      setMatchMetas(metas);setCachedMetas(metas);
+      for(let i=0;i<completed.length;i++){setApiStatus({state:'loading',msg:`Fetching M${i+1}/${completed.length}…`});try{const res=await fetch(`https://api.cricapi.com/v1/match_scorecard?apikey=${CRICAPI_KEY}&id=${completed[i].id}`);const text2=await res.text();let md2:any={};try{md2=JSON.parse(text2);}catch{}const sc2=md2.data?.scorecard||[];if(md2.status==='success'&&sc2.length>0)setCachedRaw(completed[i].id,sc2);}catch{}await new Promise(r=>setTimeout(r,300));}
       await reprocess(completed,metas);showToast(`✓ Full resync complete · ${completed.length} matches`);
     }catch(err:unknown){const msg=err instanceof Error?err.message:'Check key';setApiStatus({state:'err',msg:'Resync failed · '+msg});showToast('✗ '+msg);}
   }
@@ -485,7 +488,10 @@ ${p2sq.map(p=>{const mq=p2own.marquee.includes(p.name);const pts=(scores[p.name]
     const own=isP2?p2OwnerById(rawTeam)!:ownerById(rawTeam)!;
     const ownerColor=OWNERS.find(o=>o.id===rawTeam)?.color||'#FFD700';
     const squad=(isP2?PHASE2_PLAYERS:PLAYERS).filter(p=>p.owner===rawTeam).sort((a,b)=>{const ap=(scores[a.name]?.matchPts||[]).reduce((x,y)=>x+y,0);const bp=(scores[b.name]?.matchPts||[]).reduce((x,y)=>x+y,0);return bp-ap;});
-    const startIdx=isP2?PHASE2_FROM_MATCH-1:0;const endIdx=isP1?PHASE2_FROM_MATCH-1:matchesPlayed;
+    const startIdx=isP2?PHASE2_FROM_MATCH-1:0;
+    // Use actual scored data length to avoid phantom columns from stale matchesPlayed
+    const actualScored=Math.max(...(isP2?PHASE2_PLAYERS:PLAYERS).filter(p=>p.owner===rawTeam).map(p=>(scores[p.name]?.matchPts||[]).length),0);
+    const endIdx=isP1?PHASE2_FROM_MATCH-1:Math.min(matchesPlayed,actualScored);
     const numM=Math.max(endIdx-startIdx,0);const cols=Array.from({length:numM},(_,i)=>i);
     const td=(c:string|number,s='')=>`<td style="padding:5px 8px;border-bottom:1px solid #1e2a3a;border-right:1px solid #1e2a3a;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;${s}">${c}</td>`;
     const th=(c:string,s='')=>`<th style="padding:5px 8px;border-bottom:1px solid #1e2a3a;border-right:1px solid #1e2a3a;font-size:10px;font-weight:700;letter-spacing:1px;background:#0a0f18;white-space:nowrap;text-align:center;${s}">${c}</th>`;
