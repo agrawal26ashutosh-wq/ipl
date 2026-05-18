@@ -177,7 +177,33 @@ const PHASE2_PLAYERS = [
 const P1_NAMES_SET=new Set(PLAYERS.map(p=>p.name.toLowerCase()));
 const P2_NAMES_SET=new Set(PHASE2_PLAYERS.map(p=>p.name.toLowerCase()));
 const ALL_PLAYER_NAMES_SET=new Set([...P1_NAMES_SET,...P2_NAMES_SET]);
-const EXCLUDED_API_NAMES=new Set(['jacob duffy','jacob g duffy','rahul chahar','khaleel ahmed','gurnoor brar','harshit rana']);
+const EXCLUDED_API_NAMES=new Set([
+  // Original exclusions
+  'jacob duffy','jacob g duffy','rahul chahar','khaleel ahmed','gurnoor brar','harshit rana',
+  // Last-name collision fixes - players NOT in our squads matching by surname
+  'harshal patel',          // → was wrongly matching Axar Patel / Urvil Patel
+  'abhinandan singh',       // → was wrongly matching various Singhs
+  'kartik sharma',          // → was wrongly matching various Sharmas
+  'sandeep sharma',         // → was wrongly matching various Sharmas
+  'auqib nabi dar',         // → was wrongly matching Rasikh Salam Dar
+  'himmat singh',           // → was wrongly matching various Singhs
+  'shubham dubey',          // → was wrongly matching Harsh Dubey
+  'ravi singh',             // → was wrongly matching various Singhs
+  'raghu sharma',           // → was wrongly matching various Sharmas
+  'yash thakur',            // → was wrongly matching Shardul Thakur
+  'praveen dubey',          // → was wrongly matching Harsh Dubey
+  'saurabh dubey',          // → was wrongly matching Harsh Dubey
+  'saurabh kumar',          // → precautionary
+  'akash maharaj singh',    // → was wrongly matching various Singhs
+  'manimaran siddharth',    // → not in our squads
+  'matheesha pathirana',    // → not in our squads
+  'akshat raghuwanshi',     // → not in our squads (different from Angkrish Raghuvanshi)
+  'himmat singh',           // → not in our squads
+  'madhav tiwari',          // → not in our squads
+  'raghu sharma',           // → not in our squads
+  'sahil parakh',           // → not in our squads
+  'ben dwarshuis',          // → not in our squads
+]);
 
 type ScoreEntry={runs:number;wickets:number;catches:number;stumpings:number;matchPts:number[]};
 type Scores=Record<string,ScoreEntry>;
